@@ -104,6 +104,12 @@
     padding: 6px 16px; font-weight: 700; white-space: nowrap;
   }
   .chip .lbl { color: var(--muted); font-weight: 600; margin-right: 6px; }
+  .status .bank-chip { margin-left: auto; }
+  .reset {
+    background: transparent; border: 2px solid var(--line); border-radius: 999px;
+    padding: 6px 14px; font-weight: 700; color: var(--muted); white-space: nowrap;
+  }
+  @media (hover: hover) { .reset:hover { border-color: var(--bad); color: var(--ink); } }
   .money { font-variant-numeric: tabular-nums; }
   .money.neg { color: var(--bad); }
   .money.pos { color: var(--ok); }
@@ -228,7 +234,8 @@
     <div class="main">
       <div class="status">
         <span class="chip"><span class="lbl">Question</span><span id="qNum">1</span> / 10</span>
-        <span class="chip"><span class="lbl" id="playerLbl">Bank</span><span id="bank" class="money">$0</span></span>
+        <span class="chip bank-chip"><span class="lbl" id="playerLbl">Bank</span><span id="bank" class="money">$0</span></span>
+        <button id="resetBtn" class="reset" title="Reset the game and go back to the start">↺ Start over</button>
       </div>
       <div id="question" class="question" aria-live="polite"></div>
       <div class="worth">This question is worth <b id="worth">$10</b></div>
@@ -455,6 +462,17 @@ function showEnd() {
   $("againBtn").focus();
 }
 
+// Throws away the current game (bank back to $0) and returns to the start screen.
+function reset() {
+  if (game && game.rounds.some((r) => r.picked !== null) &&
+      !confirm("Start over? Your bank will go back to $0.")) return;
+  game = null;
+  $("game").hidden = true;
+  $("end").hidden = true;
+  $("start").hidden = false;
+  $("playerName").focus();
+}
+
 function start() {
   newGame();
   $("start").hidden = true;
@@ -468,6 +486,7 @@ $("startBtn").addEventListener("click", start);
 $("playerName").addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
 $("nextBtn").addEventListener("click", next);
 $("againBtn").addEventListener("click", start);
+$("resetBtn").addEventListener("click", reset);
 
 document.addEventListener("keydown", (e) => {
   if (!game || $("game").hidden || game.locked || e.target.tagName === "INPUT") return;

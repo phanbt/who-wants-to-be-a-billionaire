@@ -13,6 +13,8 @@ Open `index.html` in any web browser. You don't need to install anything or use 
 
 You can click the answers, or press **A–D** or **1–4** on the keyboard.
 
+Press **↺ Start over** at any time to reset the bank to $0 and go back to the start screen. If you have already answered a question, the game asks you to confirm first.
+
 ## Questions
 
 The questions live in the `QUESTIONS` object near the top of the `<script>` in `index.html`. They are split into `easy`, `medium` and `hard`. Each game picks 4 easy, 3 medium and 3 hard questions at random, so the questions get harder as the prize goes up. The answers are shuffled every time.
