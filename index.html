@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Who Wants to Be a Billionaire?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap">
+<style>
+  /* Layout: a TV-quiz stage. Question card + 4 answer buttons on the left, the prize ladder on the right (stacks above on phones). */
+  :root {
+    --bg: #0B1240;
+    --bg-2: #1A2370;
+    --surface: #141C5C;
+    --surface-2: #1E2A7A;
+    --ink: #F4F6FF;
+    --muted: #A9B2E6;
+    --line: #3A4AB0;
+    --gold: #FFC93C;
+    --on-gold: #2A1E00;
+    --ok: #2FBF71;
+    --bad: #E5484D;
+    --on-state: #FFFFFF;
+    --display: "Baloo 2", "Trebuchet MS", "Segoe UI", sans-serif;
+    --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  html { background: var(--bg); }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(ellipse 120% 600px at top, var(--bg-2), var(--bg)) no-repeat, var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.5;
+    padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+  .wrap { max-width: 980px; margin-inline: auto; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2rem, 7vw, 3.25rem);
+    line-height: 1.1;
+    margin: 0;
+    text-align: center;
+    text-wrap: balance;
+  }
+  h1 span { color: var(--gold); }
+  .lede { color: var(--muted); text-align: center; margin: 8px auto 0; max-width: 52ch; }
+
+  .btn {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--on-gold);
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 32px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 0 #B8870F;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #B8870F; }
+
+  /* Start + end screens */
+  .panel {
+    max-width: 620px;
+    margin: 28px auto 0;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 20px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+  .rules { text-align: left; margin: 0 0 24px; padding-left: 1.2em; }
+  .rules li { margin-bottom: 6px; }
+  .rules b { color: var(--gold); }
+  label.name { display: block; margin: 0 0 20px; color: var(--muted); }
+  label.name input {
+    display: block; width: 100%; max-width: 320px; margin: 6px auto 0;
+    font: inherit; font-size: 1.125rem; text-align: center;
+    background: var(--bg); color: var(--ink);
+    border: 2px solid var(--line); border-radius: 12px; padding: 10px 14px;
+  }
+  label.name input:focus { outline: none; border-color: var(--gold); }
+
+  /* Game screen */
+  .stage { display: grid; grid-template-columns: 1fr 230px; gap: 20px; margin-top: 24px; align-items: start; }
+  .main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .status { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .chip {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 999px;
+    padding: 6px 16px; font-weight: 700; white-space: nowrap;
+  }
+  .chip .lbl { color: var(--muted); font-weight: 600; margin-right: 6px; }
+  .money { font-variant-numeric: tabular-nums; }
+  .money.neg { color: var(--bad); }
+  .money.pos { color: var(--ok); }
+
+  .question {
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border: 2px solid var(--gold);
+    border-radius: 22px;
+    padding: 22px 20px;
+    text-align: center;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(1.25rem, 4.2vw, 1.75rem);
+    line-height: 1.25;
+    min-height: 120px;
+    display: grid; place-items: center;
+    text-wrap: balance;
+  }
+  .worth { text-align: center; color: var(--muted); margin-top: -6px; }
+  .worth b { color: var(--gold); }
+
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .answer {
+    display: flex; align-items: center; gap: 12px;
+    text-align: left;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    min-height: 64px;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    transition: background .15s, border-color .15s, transform .08s;
+  }
+  @media (hover: hover) { .answer:not(:disabled):hover { border-color: var(--gold); background: var(--surface-2); } }
+  .answer:not(:disabled):active { transform: scale(.98); }
+  .answer:disabled { cursor: default; }
+  .answer .key {
+    flex: none; width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--gold); color: var(--on-gold);
+    font-family: var(--display); font-weight: 700;
+  }
+  .answer.correct { background: var(--ok); border-color: var(--ok); color: var(--on-state); }
+  .answer.wrong { background: var(--bad); border-color: var(--bad); color: var(--on-state); }
+  .answer.dim { opacity: .45; }
+  .answer.correct .key, .answer.wrong .key { background: var(--on-state); color: #111; }
+
+  .feedback {
+    border-radius: 16px; padding: 14px 16px; text-align: center;
+    font-weight: 700; font-size: 1.125rem;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .feedback.good { background: rgba(47, 191, 113, .16); border: 2px solid var(--ok); }
+  .feedback.bad { background: rgba(229, 72, 77, .16); border: 2px solid var(--bad); }
+
+  /* Prize ladder */
+  .ladder {
+    list-style: none; margin: 0; padding: 10px;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 18px;
+    display: flex; flex-direction: column-reverse; gap: 4px;
+  }
+  .ladder li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 12px; border-radius: 10px;
+    font-weight: 700; font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .ladder li .n { width: 2ch; text-align: right; opacity: .8; }
+  .ladder li.current { background: var(--gold); color: var(--on-gold); }
+  .ladder li.won { color: var(--ok); }
+  .ladder li.lost { color: var(--bad); text-decoration: line-through; }
+  .ladder li.won::after { content: "✓"; margin-left: 6px; }
+  .ladder li.lost::after { content: "✗"; margin-left: 6px; text-decoration: none; }
+
+  /* End screen */
+  .total { font-family: var(--display); font-weight: 700; font-size: clamp(2.5rem, 10vw, 4rem); line-height: 1.1; margin: 4px 0 8px; }
+  .verdict { font-size: 1.25rem; font-weight: 700; margin: 0 0 16px; }
+  .recap { list-style: none; padding: 0; margin: 0 0 24px; text-align: left; display: grid; gap: 6px; }
+  .recap li {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline;
+    background: var(--bg); border-radius: 10px; padding: 8px 12px; font-size: .95rem;
+  }
+  .recap .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .recap .amt.pos { color: var(--ok); }
+  .recap .amt.neg { color: var(--bad); }
+  .recap .q { min-width: 0; }
+  .recap .q small { display: block; color: var(--muted); }
+
+  @media (max-width: 760px) {
+    .stage { grid-template-columns: 1fr; }
+    .ladder { order: -1; flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 8px; }
+    .ladder li { padding: 3px 8px; font-size: .8125rem; }
+    .ladder li .n { display: none; }
+  }
+  @media (max-width: 520px) {
+    .answers { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Who Wants to Be a <span>Billionaire?</span></h1>
+
+  <!-- Start screen -->
+  <section id="start" class="panel">
+    <ol class="rules">
+      <li>You will get <b>10 questions</b>. Each one has <b>4 answers</b>, but only <b>1</b> is right.</li>
+      <li>The first question is worth <b>$10</b>. Every next question is worth <b>double</b>: $20, $40, $80… all the way to <b>$5,120</b>!</li>
+      <li>Answer right and you <b>win</b> that amount. Answer wrong and you <b>lose</b> the same amount.</li>
+      <li>Tip: you can also press <b>A, B, C, D</b> (or 1–4) on the keyboard.</li>
+    </ol>
+    <label class="name">What is your name, player?
+      <input id="playerName" type="text" maxlength="20" autocomplete="off" placeholder="Your name">
+    </label>
+    <button id="startBtn" class="btn">Let's play!</button>
+  </section>
+
+  <!-- Game screen -->
+  <section id="game" class="stage" hidden>
+    <div class="main">
+      <div class="status">
+        <span class="chip"><span class="lbl">Question</span><span id="qNum">1</span> / 10</span>
+        <span class="chip"><span class="lbl" id="playerLbl">Bank</span><span id="bank" class="money">$0</span></span>
+      </div>
+      <div id="question" class="question" aria-live="polite"></div>
+      <div class="worth">This question is worth <b id="worth">$10</b></div>
+      <div id="answers" class="answers"></div>
+      <div id="feedback" class="feedback" hidden aria-live="assertive">
+        <span id="feedbackText"></span>
+        <button id="nextBtn" class="btn">Next question</button>
+      </div>
+    </div>
+    <ol id="ladder" class="ladder" aria-label="Prize ladder"></ol>
+  </section>
+
+  <!-- End screen -->
+  <section id="end" class="panel" hidden>
+    <div id="endTitle" class="verdict"></div>
+    <div id="total" class="total money"></div>
+    <p id="endSub" class="lede" style="margin-bottom:20px"></p>
+    <ul id="recap" class="recap"></ul>
+    <button id="againBtn" class="btn">Play again</button>
+  </section>
+</div>
+
+<script>
+// Question bank for kids aged 8–12. The FIRST answer in each list is the correct one;
+// answers are shuffled before they are shown. Each game picks 4 easy, 3 medium, 3 hard.
+const QUESTIONS = {
+  easy: [
+    ["How many legs does a spider have?", ["8", "6", "10", "4"]],
+    ["What is the largest planet in our solar system?", ["Jupiter", "Saturn", "Earth", "Mars"]],
+    ["Which animal is known as the \"King of the Jungle\"?", ["Lion", "Tiger", "Elephant", "Gorilla"]],
+    ["How many days are there in a leap year?", ["366", "365", "364", "360"]],
+    ["What color do you get when you mix blue and yellow?", ["Green", "Purple", "Orange", "Brown"]],
+    ["What is 7 × 8?", ["56", "54", "48", "64"]],
+    ["How many continents are there on Earth?", ["7", "5", "6", "8"]],
+    ["What do bees make?", ["Honey", "Butter", "Silk", "Jam"]],
+    ["Which is the largest ocean on Earth?", ["Pacific Ocean", "Atlantic Ocean", "Indian Ocean", "Arctic Ocean"]],
+    ["How many sides does a hexagon have?", ["6", "5", "7", "8"]],
+    ["Which planet is known as the Red Planet?", ["Mars", "Venus", "Jupiter", "Mercury"]],
+    ["How many minutes are there in one hour?", ["60", "100", "30", "24"]],
+    ["Which is the tallest animal in the world?", ["Giraffe", "Elephant", "Camel", "Ostrich"]],
+    ["What is 100 − 37?", ["63", "73", "67", "53"]],
+    ["What is the opposite of \"ancient\"?", ["Modern", "Old", "Antique", "Historic"]],
+    ["Which musical instrument usually has 88 keys?", ["Piano", "Guitar", "Violin", "Flute"]],
+    ["What do caterpillars turn into?", ["Butterflies", "Beetles", "Bees", "Dragonflies"]],
+    ["What is half of 250?", ["125", "150", "120", "175"]],
+  ],
+  medium: [
+    ["What gas do plants take from the air to make their food?", ["Carbon dioxide", "Oxygen", "Helium", "Hydrogen"]],
+    ["What is the capital city of France?", ["Paris", "Rome", "Madrid", "Berlin"]],
+    ["What is the longest river in Africa?", ["The Nile", "The Congo", "The Niger", "The Zambezi"]],
+    ["What is the hardest natural material on Earth?", ["Diamond", "Gold", "Iron", "Granite"]],
+    ["At what temperature does water boil at sea level?", ["100 °C", "90 °C", "50 °C", "212 °C"]],
+    ["Who painted the Mona Lisa?", ["Leonardo da Vinci", "Pablo Picasso", "Vincent van Gogh", "Claude Monet"]],
+    ["Which of these animals is a mammal?", ["Dolphin", "Shark", "Octopus", "Salmon"]],
+    ["What is 12 × 12?", ["144", "124", "142", "122"]],
+    ["What is the largest animal that has ever lived?", ["Blue whale", "African elephant", "T. rex", "Giraffe"]],
+    ["In which country are the Pyramids of Giza?", ["Egypt", "Mexico", "Peru", "Greece"]],
+    ["How many players does one soccer team have on the field?", ["11", "9", "10", "12"]],
+    ["What is the smallest prime number?", ["2", "1", "3", "0"]],
+    ["Which planet is famous for its bright, beautiful rings?", ["Saturn", "Mars", "Venus", "Mercury"]],
+    ["What is the largest hot desert in the world?", ["Sahara", "Gobi", "Kalahari", "Mojave"]],
+    ["What do we call an animal that eats only plants?", ["Herbivore", "Carnivore", "Omnivore", "Insectivore"]],
+    ["What number is written as \"L\" in Roman numerals?", ["50", "100", "10", "500"]],
+    ["Which planet is closest to the Sun?", ["Mercury", "Venus", "Earth", "Mars"]],
+    ["What is the square root of 81?", ["9", "8", "7", "18"]],
+  ],
+  hard: [
+    ["How many bones are there in an adult human body?", ["206", "186", "226", "306"]],
+    ["What is the chemical symbol for gold?", ["Au", "Ag", "Go", "Gd"]],
+    ["What is the capital city of Australia?", ["Canberra", "Sydney", "Melbourne", "Perth"]],
+    ["Who was the first person to walk on the Moon?", ["Neil Armstrong", "Buzz Aldrin", "Yuri Gagarin", "John Glenn"]],
+    ["What is the largest organ of the human body?", ["Skin", "Liver", "Heart", "Brain"]],
+    ["How many sides does a dodecagon have?", ["12", "10", "20", "14"]],
+    ["Which blood cells help your body fight germs?", ["White blood cells", "Red blood cells", "Platelets", "Skin cells"]],
+    ["What is the tallest mountain above sea level?", ["Mount Everest", "K2", "Kilimanjaro", "Mont Blanc"]],
+    ["In which year did World War II end?", ["1945", "1918", "1939", "1950"]],
+    ["At what temperature does water freeze in Fahrenheit?", ["32 °F", "0 °F", "100 °F", "212 °F"]],
+    ["Which gas makes up most of the air we breathe?", ["Nitrogen", "Oxygen", "Carbon dioxide", "Argon"]],
+    ["What is 15% of 200?", ["30", "15", "20", "35"]],
+    ["Which of the Seven Wonders of the Ancient World is still standing?", ["Great Pyramid of Giza", "Colossus of Rhodes", "Hanging Gardens of Babylon", "Lighthouse of Alexandria"]],
+    ["Which language has the most native speakers in the world?", ["Mandarin Chinese", "English", "Spanish", "Hindi"]],
+    ["How many hearts does an octopus have?", ["3", "1", "2", "8"]],
+    ["What is the longest bone in the human body?", ["Femur (thigh bone)", "Spine", "Humerus (arm bone)", "Skull"]],
+  ],
+};
+const PLAN = [["easy", 4], ["medium", 3], ["hard", 3]];
+const TOTAL = 10;
+const FIRST_PRIZE = 10;
+const KEYS = ["A", "B", "C", "D"];
+
+const $ = (id) => document.getElementById(id);
+const prizeFor = (i) => FIRST_PRIZE * 2 ** i; // $10, $20, $40 … $5,120
+const fmt = (n) => (n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString("en-US");
+
+function shuffle(list) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let game = null;
+
+function newGame() {
+  const rounds = [];
+  for (const [level, count] of PLAN) {
+    for (const [text, answers] of shuffle(QUESTIONS[level]).slice(0, count)) {
+      const options = shuffle(answers);
+      rounds.push({ text, options, correct: options.indexOf(answers[0]), picked: null });
+    }
+  }
+  game = { rounds, index: 0, bank: 0, name: $("playerName").value.trim(), locked: false };
+}
+
+function setMoney(el, n) {
+  el.textContent = fmt(n);
+  el.classList.toggle("neg", n < 0);
+  el.classList.toggle("pos", n > 0);
+}
+
+function renderLadder() {
+  const ladder = $("ladder");
+  ladder.innerHTML = "";
+  game.rounds.forEach((r, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="n">${i + 1}</span><span>${fmt(prizeFor(i))}</span>`;
+    if (i === game.index && r.picked === null) li.classList.add("current");
+    else if (r.picked !== null) li.classList.add(r.picked === r.correct ? "won" : "lost");
+    ladder.appendChild(li);
+  });
+}
+
+function renderQuestion() {
+  const r = game.rounds[game.index];
+  game.locked = false;
+  $("qNum").textContent = game.index + 1;
+  $("worth").textContent = fmt(prizeFor(game.index));
+  $("question").textContent = r.text;
+  setMoney($("bank"), game.bank);
+  $("feedback").hidden = true;
+
+  const box = $("answers");
+  box.innerHTML = "";
+  r.options.forEach((opt, i) => {
+    const b = document.createElement("button");
+    b.className = "answer";
+    b.innerHTML = `<span class="key">${KEYS[i]}</span><span></span>`;
+    b.lastChild.textContent = opt;
+    b.addEventListener("click", () => choose(i));
+    box.appendChild(b);
+  });
+  renderLadder();
+}
+
+function choose(i) {
+  if (game.locked) return;
+  game.locked = true;
+  const r = game.rounds[game.index];
+  const prize = prizeFor(game.index);
+  r.picked = i;
+  const right = i === r.correct;
+  game.bank += right ? prize : -prize;
+
+  [...$("answers").children].forEach((b, k) => {
+    b.disabled = true;
+    if (k === r.correct) b.classList.add("correct");
+    else if (k === i) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+
+  setMoney($("bank"), game.bank);
+  renderLadder();
+
+  const fb = $("feedback");
+  fb.className = "feedback " + (right ? "good" : "bad");
+  $("feedbackText").textContent = right
+    ? `🎉 Correct! You win ${fmt(prize)}!`
+    : `😬 Oops! The right answer was "${r.options[r.correct]}". You lose ${fmt(prize)}.`;
+  const last = game.index === TOTAL - 1;
+  $("nextBtn").textContent = last ? "See my results" : "Next question";
+  fb.hidden = false;
+  $("nextBtn").focus();
+}
+
+function next() {
+  if (game.index < TOTAL - 1) {
+    game.index++;
+    renderQuestion();
+  } else {
+    showEnd();
+  }
+}
+
+function showEnd() {
+  $("game").hidden = true;
+  $("end").hidden = false;
+  const correct = game.rounds.filter((r) => r.picked === r.correct).length;
+  const who = game.name || "Player";
+  setMoney($("total"), game.bank);
+
+  let title;
+  if (correct === TOTAL) title = `🏆 PERFECT, ${who}! You are a quiz champion!`;
+  else if (game.bank > 0) title = `🌟 Well done, ${who}!`;
+  else if (game.bank === 0) title = `😅 So close, ${who}! You broke even.`;
+  else title = `💪 Good try, ${who}! Practice makes perfect.`;
+  $("endTitle").textContent = title;
+  $("endSub").textContent = `You answered ${correct} out of ${TOTAL} questions correctly. The best possible score is ${fmt(prizeFor(TOTAL) - FIRST_PRIZE)}.`;
+
+  const recap = $("recap");
+  recap.innerHTML = "";
+  game.rounds.forEach((r, i) => {
+    const right = r.picked === r.correct;
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${right ? "✅" : "❌"}</span><span class="q"></span><span class="amt ${right ? "pos" : "neg"}">${right ? "+" : ""}${fmt(right ? prizeFor(i) : -prizeFor(i))}</span>`;
+    const q = li.querySelector(".q");
+    q.textContent = r.text;
+    const ans = document.createElement("small");
+    ans.textContent = "Answer: " + r.options[r.correct];
+    q.appendChild(ans);
+    recap.appendChild(li);
+  });
+  $("againBtn").focus();
+}
+
+function start() {
+  newGame();
+  $("start").hidden = true;
+  $("end").hidden = true;
+  $("game").hidden = false;
+  $("playerLbl").textContent = game.name ? `${game.name}'s bank` : "Bank";
+  renderQuestion();
+}
+
+$("startBtn").addEventListener("click", start);
+$("playerName").addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
+$("nextBtn").addEventListener("click", next);
+$("againBtn").addEventListener("click", start);
+
+document.addEventListener("keydown", (e) => {
+  if (!game || $("game").hidden || game.locked || e.target.tagName === "INPUT") return;
+  const k = e.key.toUpperCase();
+  const i = KEYS.indexOf(k) >= 0 ? KEYS.indexOf(k) : ["1", "2", "3", "4"].indexOf(k);
+  if (i >= 0) choose(i);
+});
+</script>
+</body>
+</html>
